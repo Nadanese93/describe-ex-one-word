@@ -10,6 +10,7 @@ bytes on disk match what was written.
 import os
 import sys
 import tempfile
+import unicodedata
 
 WORD = "Unmatched"
 
@@ -20,6 +21,9 @@ def main() -> int:
         return 1
     if any(ch.isspace() for ch in WORD):
         print("error: entry must be exactly one word (no whitespace)", file=sys.stderr)
+        return 1
+    if any(unicodedata.category(ch) in ("Cc", "Cf", "Cs", "Co", "Cn") for ch in WORD):
+        print("error: entry must not contain control/non-printable characters", file=sys.stderr)
         return 1
 
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output"
@@ -43,6 +47,8 @@ def main() -> int:
     with open(target, "rb") as fh:
         if fh.read() != data:
             raise RuntimeError("read-back verification failed: entry.txt bytes differ")
+    if os.path.getsize(target) != len(data):
+        raise RuntimeError("size verification failed: entry.txt size differs")
     return 0
 
 
